@@ -1,0 +1,37 @@
+.dccus__message-container {
+    position: absolute;
+    top: 5px;
+    left: 5px;
+    right: 5px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    pointer-events: none;
+    z-index: 1000;
+}
+
+@media (width >= 1280px) {
+    .dccus__message-container {
+        left: 15vw;
+        right: 15vw;
+    }
+}
+
+.dccus__message {
+    color: white;
+    padding: 5px;
+    border-radius: 5px;
+}
+
+.dccus__message--info {
+    background-color: mediumblue;
+}
+
+.dccus__message--success {
+    background-color: darkgreen;
+}
+
+.dccus__message--error {
+    background-color: darkred;
+}

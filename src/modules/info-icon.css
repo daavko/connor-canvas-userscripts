@@ -1,0 +1,63 @@
+.dccus__info-icons {
+    position: fixed;
+    top: 8px;
+    right: 8px;
+    display: flex;
+    gap: 8px;
+}
+
+@media (orientation: portrait) {
+    .dccus__info-icons {
+        flex-direction: column;
+    }
+}
+
+#main-bubble[position='bottom right'] + .dccus__info-icons {
+    right: unset;
+    left: 1rem;
+}
+
+.dccus__info-icon {
+    padding: 8px;
+    border-radius: 50%;
+    border: 2px solid white;
+    background-color: black;
+
+    svg {
+        display: block;
+        width: 24px;
+        height: 24px;
+    }
+}
+
+.dccus__info-icon--hidden {
+    display: none;
+}
+
+.dccus__info-icon--white svg {
+    fill: white;
+}
+
+.dccus__info-icon--green svg {
+    fill: limegreen;
+}
+
+.dccus__info-icon--red svg {
+    fill: red;
+}
+
+.dccus__info-icon--orange svg {
+    fill: orange;
+}
+
+.dccus__info-icon--yellow svg {
+    fill: yellow;
+}
+
+.dccus__info-icon--gray svg {
+    fill: gray;
+}
+
+.dccus__info-icon--clickable {
+    cursor: pointer;
+}

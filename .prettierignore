@@ -1,0 +1,7 @@
+/.git/
+/.idea/
+/.ts/
+/.vscode/
+/dist/
+/mock/
+/node_modules/
