@@ -1,0 +1,10 @@
+/* Hide DeepL, for whatever reason it just throws an element onto the canvas that takes half the width... */
+deepl-input-controller {
+    display: none !important;
+}
+
+.dccus__sound-setting-group {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px;
+}

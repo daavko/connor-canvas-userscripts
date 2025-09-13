@@ -1,0 +1,92 @@
+.dccus__settings-ui {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 500px;
+    display: flex;
+    flex-direction: column;
+    background: var(--drawer-background);
+    border-left: 2px solid var(--drawer-border);
+}
+
+.dccus__settings-ui--hidden {
+    display: none;
+}
+
+@media (width < 500px) {
+    .dccus__settings-ui {
+        width: 100%;
+    }
+}
+
+.dccus__settings-ui header {
+    position: relative;
+    background: var(--panel-background);
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.dccus__settings-ui h3 {
+    margin: 0;
+}
+
+.dccus__settings-ui p {
+    margin-top: 0;
+}
+
+.dccus__settings-ui .dccus__settings-ui__close {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 48px;
+    height: 48px;
+    background: none;
+    border: none;
+    fill: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.dccus__settings-ui .dccus__settings-ui__close svg {
+    width: 24px;
+    height: 24px;
+}
+
+.dccus__settings-ui article {
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+    max-height: 100%;
+}
+
+.dccus__settings-ui section {
+    padding: 16px;
+    overflow-y: auto;
+}
+
+label.dccus__text-input {
+    padding: 0.25em;
+    gap: 0.25em;
+}
+
+label.dccus__text-input span {
+    align-self: center;
+}
+
+label.dccus__range-input {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto auto;
+}
+
+label.dccus__range-input input {
+    grid-column: span 2;
+}
+
+label.dccus__range-input .range-value {
+    justify-self: end;
+}
