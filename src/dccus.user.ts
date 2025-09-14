@@ -114,13 +114,18 @@ function deduplicateTemplates(): void {
 function beforeCanvasLoad(): void {
     addStylesheet('dccus', dccusStyles);
     window.stop();
-    // const frontendScript = document.head.querySelector('script');
-    const frontendScript = false;
+    const body = document.querySelector('body');
+    if (!body) {
+        window.location.reload();
+    } else {
+        body.innerHTML = '';
+    }
+    const frontendScript = document.head.querySelector('script');
     if (frontendScript) {
         const scriptContent = frontendScript.textContent;
         const templateAssignmentRegex = /(this\.templates=[^}]+)/;
         const templateClassRegex =
-            /(class ([a-zA-Z]+)\{constructor\([a-z]+,[a-z]+,[a-z]+=!0,[a-z]+=0,[a-z]+=0,[a-z]+="",[a-z]+=0,[a-z]+=0,[a-z]+=[a-z]+\.CIEDE2000\)\{.+?this\.processed\.texture}})/;
+            /(class ([a-zA-Z]+)\{constructor\([a-zA-Z]+,[a-zA-Z]+,[a-zA-Z]+=!0,[a-zA-Z]+=0,[a-zA-Z]+=0,[a-zA-Z]+=(""|''),[a-zA-Z]+=0,[a-zA-Z]+=0,[a-zA-Z]+=[a-zA-Z]+\.CIEDE2000\)\{.+?this\.processed\.texture}})/;
         let newScriptContent = scriptContent.replace(
             templateAssignmentRegex,
             '$1;window.dccusSetTemplatesStore(this.templates);',
