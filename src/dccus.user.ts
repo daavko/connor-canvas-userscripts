@@ -114,7 +114,8 @@ function deduplicateTemplates(): void {
 function beforeCanvasLoad(): void {
     addStylesheet('dccus', dccusStyles);
     window.stop();
-    const frontendScript = document.head.querySelector('script');
+    // const frontendScript = document.head.querySelector('script');
+    const frontendScript = false;
     if (frontendScript) {
         const scriptContent = frontendScript.textContent;
         const templateAssignmentRegex = /(this\.templates=[^}]+)/;
