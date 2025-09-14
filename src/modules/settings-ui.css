@@ -90,3 +90,9 @@ label.dccus__range-input input {
 label.dccus__range-input .range-value {
     justify-self: end;
 }
+
+label.dccus__checkbox-input {
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+}

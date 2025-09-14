@@ -58,11 +58,9 @@ export function createBooleanSetting(setting: Setting<unknown, boolean>, label: 
     setting.addCallback(() => {
         checkbox.checked = setting.serializeValue(setting.get());
     });
-    return el('div', [
-        el('label', { class: 'input-group', attributes: { for: id } }, [
-            checkbox,
-            el('span', { class: 'label-text' }, [label]),
-        ]),
+    return el('label', { class: 'dccus__checkbox-input', attributes: { for: id } }, [
+        checkbox,
+        el('span', { class: 'label-text' }, [label]),
     ]);
 }
 
