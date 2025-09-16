@@ -136,24 +136,17 @@ function replaceFrontendScript(script: HTMLScriptElement): void {
 
 function beforeCanvasLoad(): void {
     addStylesheet('dccus', dccusStyles);
-    const body = document.querySelector('body');
-    if (body) {
-        window.stop();
-        body.innerHTML = '';
-        const frontendScript = document.head.querySelector('script');
-        if (frontendScript) {
-            replaceFrontendScript(frontendScript);
-        }
-    } else {
-        const beforeScriptHandler = (evt: Event): void => {
-            if (evt.target instanceof HTMLScriptElement && !evt.target.textContent.includes('dccus')) {
-                evt.preventDefault();
-                document.removeEventListener('beforescriptexecute', beforeScriptHandler);
-                replaceFrontendScript(evt.target);
+    const interactiveHandler = (): void => {
+        if (document.readyState === 'interactive') {
+            const frontendScript = document.head.querySelector('script');
+            if (frontendScript) {
+                document.removeEventListener('readystatechange', interactiveHandler);
+                window.stop();
+                replaceFrontendScript(frontendScript);
             }
-        };
-        document.addEventListener('beforescriptexecute', beforeScriptHandler);
-    }
+        }
+    };
+    document.addEventListener('readystatechange', interactiveHandler);
 }
 
 function afterCanvasLoad(): void {
