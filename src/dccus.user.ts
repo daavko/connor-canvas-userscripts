@@ -111,35 +111,48 @@ function deduplicateTemplates(): void {
     });
 }
 
+const TEMPLATE_ASSIGNMENT_REGEX = /(this\.templates=[^}]+)/;
+const TEMPLATE_CLASS_REGEX =
+    /(class ([a-zA-Z]+)\{constructor\([a-zA-Z]+,[a-zA-Z]+,[a-zA-Z]+=!0,[a-zA-Z]+=0,[a-zA-Z]+=0,[a-zA-Z]+=(""|''),[a-zA-Z]+=0,[a-zA-Z]+=0,[a-zA-Z]+=[a-zA-Z]+\.CIEDE2000\)\{.+?this\.processed\.texture}})/;
+
+function replaceFrontendScript(script: HTMLScriptElement): void {
+    const scriptContent = script.textContent;
+    let newScriptContent = scriptContent.replace(
+        TEMPLATE_ASSIGNMENT_REGEX,
+        '$1;window.dccusSetTemplatesStore(this.templates);',
+    );
+    newScriptContent = newScriptContent.replace(TEMPLATE_CLASS_REGEX, '$1;window.dccusSetTemplateClass($2);');
+    newScriptContent += ';window.dccusLoaderFn();';
+    const newScript = document.createElement('script');
+    newScript.type = 'module';
+    newScript.crossOrigin = 'anonymous';
+    newScript.textContent = newScriptContent;
+    if (script.parentNode) {
+        script.parentNode.replaceChild(newScript, script);
+    } else {
+        throw new Error('Failed to replace frontend script: parentNode is null');
+    }
+}
+
 function beforeCanvasLoad(): void {
     addStylesheet('dccus', dccusStyles);
-    window.stop();
     const body = document.querySelector('body');
-    if (!body) {
-        window.location.reload();
-    } else {
+    if (body) {
+        window.stop();
         body.innerHTML = '';
-    }
-    const frontendScript = document.head.querySelector('script');
-    if (frontendScript) {
-        const scriptContent = frontendScript.textContent;
-        const templateAssignmentRegex = /(this\.templates=[^}]+)/;
-        const templateClassRegex =
-            /(class ([a-zA-Z]+)\{constructor\([a-zA-Z]+,[a-zA-Z]+,[a-zA-Z]+=!0,[a-zA-Z]+=0,[a-zA-Z]+=0,[a-zA-Z]+=(""|''),[a-zA-Z]+=0,[a-zA-Z]+=0,[a-zA-Z]+=[a-zA-Z]+\.CIEDE2000\)\{.+?this\.processed\.texture}})/;
-        let newScriptContent = scriptContent.replace(
-            templateAssignmentRegex,
-            '$1;window.dccusSetTemplatesStore(this.templates);',
-        );
-        newScriptContent = newScriptContent.replace(templateClassRegex, '$1;window.dccusSetTemplateClass($2);');
-        const newScript = document.createElement('script');
-        newScript.type = 'module';
-        newScript.crossOrigin = 'anonymous';
-        newScript.textContent = newScriptContent;
-        if (frontendScript.parentNode) {
-            frontendScript.parentNode.replaceChild(newScript, frontendScript);
-        } else {
-            throw new Error('Failed to replace frontend script: parentNode is null');
+        const frontendScript = document.head.querySelector('script');
+        if (frontendScript) {
+            replaceFrontendScript(frontendScript);
         }
+    } else {
+        const beforeScriptHandler = (evt: Event): void => {
+            if (evt.target instanceof HTMLScriptElement && !evt.target.textContent.includes('dccus')) {
+                evt.preventDefault();
+                document.removeEventListener('beforescriptexecute', beforeScriptHandler);
+                replaceFrontendScript(evt.target);
+            }
+        };
+        document.addEventListener('beforescriptexecute', beforeScriptHandler);
     }
 }
 
@@ -311,10 +324,14 @@ function isLoaded(): boolean {
     return document.querySelector('body > .splash') === null;
 }
 
+function startCheckingLoaded(): void {
+    const loaderInterval = setInterval(() => {
+        if (isLoaded()) {
+            clearInterval(loaderInterval);
+            afterCanvasLoad();
+        }
+    }, 500);
+}
+window.dccusLoaderFn = startCheckingLoaded;
+
 beforeCanvasLoad();
-const loaderInterval = setInterval(() => {
-    if (isLoaded()) {
-        clearInterval(loaderInterval);
-        afterCanvasLoad();
-    }
-}, 500);

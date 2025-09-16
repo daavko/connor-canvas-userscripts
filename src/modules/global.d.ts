@@ -47,5 +47,6 @@ declare global {
         Howler: Howler;
         dccusSetTemplatesStore: TemplateStoreSetter;
         dccusSetTemplateClass: TemplateClassSetter;
+        dccusLoaderFn: () => void;
     }
 }
