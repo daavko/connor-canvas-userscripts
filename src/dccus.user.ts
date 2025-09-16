@@ -136,17 +136,25 @@ function replaceFrontendScript(script: HTMLScriptElement): void {
 
 function beforeCanvasLoad(): void {
     addStylesheet('dccus', dccusStyles);
-    const interactiveHandler = (): void => {
-        if (document.readyState === 'interactive') {
-            const frontendScript = document.head.querySelector('script');
-            if (frontendScript) {
-                document.removeEventListener('readystatechange', interactiveHandler);
-                window.stop();
-                replaceFrontendScript(frontendScript);
+    console.log(document.location.hash);
+    if (document.readyState !== 'loading') {
+        GLOBAL_MESSENGER.showErrorMessage(
+            'DCCUS was loaded too late. Please configure your userscript manager to instant injection mode.',
+        );
+        return;
+    } else {
+        const interactiveHandler = (): void => {
+            if (document.readyState === 'interactive') {
+                const frontendScript = document.head.querySelector('script');
+                if (frontendScript) {
+                    document.removeEventListener('readystatechange', interactiveHandler);
+                    window.stop();
+                    replaceFrontendScript(frontendScript);
+                }
             }
-        }
-    };
-    document.addEventListener('readystatechange', interactiveHandler);
+        };
+        document.addEventListener('readystatechange', interactiveHandler);
+    }
 }
 
 function afterCanvasLoad(): void {
