@@ -1,5 +1,7 @@
 import { mdiCamera, mdiCog } from '@mdi/js';
 import dccusStyles from './dccus.css';
+import { BOARD_URI_REGEX } from './modules/common';
+import { getHashParams } from './modules/document';
 import type { TemplateClass } from './modules/global';
 import { el } from './modules/html';
 import { createInfoIcon } from './modules/info-icon';
@@ -14,7 +16,7 @@ import {
     createStringSetting,
     getOrCreateSettingsContainer,
 } from './modules/settings-ui';
-import { takeCanvasSnapshot } from './modules/snapshot';
+import { takeCanvasSnapshot, takeDefaultCanvasSnapshot } from './modules/snapshot';
 import { addStylesheet } from './modules/stylesheets';
 import type { SvelteStore } from './modules/svelte-store';
 import { scheduleMacroTask } from './modules/task';
@@ -30,6 +32,9 @@ const builtinSounds: string[] = [];
 
 let templateStore: SvelteStore<TemplateClass[]> | null = null;
 let TemplateClassType: typeof TemplateClass | null = null;
+
+const hashParams = getHashParams();
+console.log('DCCUS hash params:', hashParams);
 
 window.dccusSetTemplatesStore = (store): void => {
     templateStore = store;
@@ -136,13 +141,7 @@ function replaceFrontendScript(script: HTMLScriptElement): void {
 
 function beforeCanvasLoad(): void {
     addStylesheet('dccus', dccusStyles);
-    console.log(document.location.hash);
-    if (document.readyState !== 'loading') {
-        GLOBAL_MESSENGER.showErrorMessage(
-            'DCCUS was loaded too late. Please configure your userscript manager to instant injection mode.',
-        );
-        return;
-    } else {
+    if (document.readyState === 'loading') {
         const interactiveHandler = (): void => {
             if (document.readyState === 'interactive') {
                 const frontendScript = document.head.querySelector('script');
@@ -154,6 +153,21 @@ function beforeCanvasLoad(): void {
             }
         };
         document.addEventListener('readystatechange', interactiveHandler);
+    } else if (document.readyState === 'interactive' && Reflect.has(document, 'onbeforescriptexecute')) {
+        const beforeScriptHandler = (evt: Event): void => {
+            if (evt.target instanceof HTMLScriptElement && !evt.target.textContent.includes('dccus')) {
+                evt.preventDefault();
+                document.removeEventListener('beforescriptexecute', beforeScriptHandler);
+                replaceFrontendScript(evt.target);
+            }
+        };
+        document.addEventListener('beforescriptexecute', beforeScriptHandler);
+    } else {
+        GLOBAL_MESSENGER.showErrorMessage(
+            'DCCUS was loaded too late. Try reloading, if the issue persists please configure your userscript manager to instant injection mode.',
+            undefined,
+            10000,
+        );
     }
 }
 
@@ -254,7 +268,23 @@ function afterCanvasLoad(): void {
             return;
         }
 
-        takeCanvasSnapshot()
+        const board = hashParams.get('board');
+        let boardId: number | null = null;
+        if (board != null) {
+            const match = BOARD_URI_REGEX.exec(window.location.pathname);
+            if (match != null && match.length >= 2) {
+                boardId = parseInt(match[1], 10);
+            }
+        }
+
+        let snapshotPromise: Promise<ImageData>;
+        if (boardId != null) {
+            snapshotPromise = takeCanvasSnapshot(boardId);
+        } else {
+            snapshotPromise = takeDefaultCanvasSnapshot();
+        }
+
+        snapshotPromise
             .then(async (snapshotImageData) => {
                 // convert the ImageData to a downloadable link
                 const canvas = new OffscreenCanvas(snapshotImageData.width, snapshotImageData.height);
