@@ -34,7 +34,6 @@ let templateStore: SvelteStore<TemplateClass[]> | null = null;
 let TemplateClassType: typeof TemplateClass | null = null;
 
 const hashParams = getHashParams();
-console.log('DCCUS hash params:', hashParams);
 
 window.dccusSetTemplatesStore = (store): void => {
     templateStore = store;
@@ -271,7 +270,7 @@ function afterCanvasLoad(): void {
         const board = hashParams.get('board');
         let boardId: number | null = null;
         if (board != null) {
-            const match = BOARD_URI_REGEX.exec(window.location.pathname);
+            const match = BOARD_URI_REGEX.exec(board);
             if (match != null && match.length >= 2) {
                 boardId = parseInt(match[1], 10);
             }
