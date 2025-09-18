@@ -41,12 +41,14 @@ type TemplateClassType = typeof TemplateClass;
 
 type TemplateStoreSetter = (store: SvelteStore<TemplateClass[]>) => void;
 type TemplateClassSetter = (templateClassType: typeof TemplateClass) => void;
+type BaseUrlSetter = (url: URL) => void;
 
 declare global {
     interface Window {
         Howler: Howler;
         dccusSetTemplatesStore: TemplateStoreSetter;
         dccusSetTemplateClass: TemplateClassSetter;
+        dccusSetBaseUrl: BaseUrlSetter;
         dccusLoaderFn: () => void;
     }
 }

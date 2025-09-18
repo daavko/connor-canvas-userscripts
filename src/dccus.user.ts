@@ -1,8 +1,9 @@
 import { mdiCamera, mdiCog } from '@mdi/js';
 import dccusStyles from './dccus.css';
+import { cancelAnimationLoop, fetchAnimationInfo, startAnimationLoop } from './modules/animation';
 import { BOARD_URI_REGEX } from './modules/common';
-import { getHashParams } from './modules/document';
 import type { TemplateClass } from './modules/global';
+import { bindGlobalsSetters, getBaseUrl, getTemplatesStore } from './modules/globals';
 import { el } from './modules/html';
 import { createInfoIcon } from './modules/info-icon';
 import { GLOBAL_MESSENGER } from './modules/message';
@@ -18,8 +19,9 @@ import {
 } from './modules/settings-ui';
 import { takeCanvasSnapshot, takeDefaultCanvasSnapshot } from './modules/snapshot';
 import { addStylesheet } from './modules/stylesheets';
-import type { SvelteStore } from './modules/svelte-store';
 import { scheduleMacroTask } from './modules/task';
+
+bindGlobalsSetters();
 
 const canvasSnapshotButton = createInfoIcon('Take snapshot', mdiCamera, {
     clickable: true,
@@ -29,18 +31,6 @@ const canvasSettingsButton = createInfoIcon('Settings', mdiCog, {
 });
 
 const builtinSounds: string[] = [];
-
-let templateStore: SvelteStore<TemplateClass[]> | null = null;
-let TemplateClassType: typeof TemplateClass | null = null;
-
-const hashParams = getHashParams();
-
-window.dccusSetTemplatesStore = (store): void => {
-    templateStore = store;
-};
-window.dccusSetTemplateClass = (templateClassType): void => {
-    TemplateClassType = templateClassType;
-};
 
 function createHowlSettingSrcCallback(howlIndex: number): SettingUpdateCallback<string> {
     return (_, newValue): void => {
@@ -56,6 +46,11 @@ function createHowlSettingVolumeCallback(howlIndex: number): SettingUpdateCallba
 
 const templateSettings = Settings.create('template', {
     deduplicateTemplates: new BooleanSetting(true),
+    animationUrl: new StringSetting('', [
+        (_, newValue): void => {
+            runAnimation(newValue);
+        },
+    ]),
 });
 
 const soundSettings = Settings.create('sound', {
@@ -106,7 +101,7 @@ function changeHowlVolume(howlIndex: number, volume: number): void {
 }
 
 function deduplicateTemplates(): void {
-    templateStore?.update((v) => {
+    getTemplatesStore().update((v) => {
         const seen = new Map<string, TemplateClass>();
         for (const template of v) {
             seen.set(template.title, template);
@@ -123,7 +118,7 @@ function replaceFrontendScript(script: HTMLScriptElement): void {
     const scriptContent = script.textContent;
     let newScriptContent = scriptContent.replace(
         TEMPLATE_ASSIGNMENT_REGEX,
-        '$1;window.dccusSetTemplatesStore(this.templates);',
+        '$1;window.dccusSetTemplatesStore(this.templates);window.dccusSetBaseUrl(this.uri);',
     );
     newScriptContent = newScriptContent.replace(TEMPLATE_CLASS_REGEX, '$1;window.dccusSetTemplateClass($2);');
     newScriptContent += ';window.dccusLoaderFn();';
@@ -135,6 +130,24 @@ function replaceFrontendScript(script: HTMLScriptElement): void {
         script.parentNode.replaceChild(newScript, script);
     } else {
         throw new Error('Failed to replace frontend script: parentNode is null');
+    }
+}
+
+function runAnimation(url: string): void {
+    if (url.endsWith('.json')) {
+        fetchAnimationInfo(url)
+            .then((info) => {
+                startAnimationLoop(info);
+            })
+            .catch((error: unknown) => {
+                if (error instanceof Error) {
+                    GLOBAL_MESSENGER.showErrorMessage(`Failed to load animation. Try again later.`, error);
+                } else {
+                    GLOBAL_MESSENGER.showErrorMessage('Failed to load animation due to an unknown error.');
+                }
+            });
+    } else {
+        cancelAnimationLoop();
     }
 }
 
@@ -154,7 +167,11 @@ function beforeCanvasLoad(): void {
         document.addEventListener('readystatechange', interactiveHandler);
     } else if (document.readyState === 'interactive' && Reflect.has(document, 'onbeforescriptexecute')) {
         const beforeScriptHandler = (evt: Event): void => {
-            if (evt.target instanceof HTMLScriptElement && !evt.target.textContent.includes('dccus')) {
+            if (
+                evt.target instanceof HTMLScriptElement &&
+                !evt.target.textContent.includes('dccus') &&
+                evt.target.type === 'module'
+            ) {
                 evt.preventDefault();
                 document.removeEventListener('beforescriptexecute', beforeScriptHandler);
                 replaceFrontendScript(evt.target);
@@ -177,6 +194,8 @@ function afterCanvasLoad(): void {
         createSettingsText('Template Settings'),
         createLineBreak(),
         createBooleanSetting(templateSettings.deduplicateTemplates, 'Deduplicate templates (works only on load)'),
+        createLineBreak(),
+        createStringSetting(templateSettings.animationUrl, 'Animation URL:'),
         createLineBreak(),
         createLineBreak(),
         createLineBreak(),
@@ -267,13 +286,11 @@ function afterCanvasLoad(): void {
             return;
         }
 
-        const board = hashParams.get('board');
+        const board = getBaseUrl().pathname;
         let boardId: number | null = null;
-        if (board != null) {
-            const match = BOARD_URI_REGEX.exec(board);
-            if (match != null && match.length >= 2) {
-                boardId = parseInt(match[1], 10);
-            }
+        const match = BOARD_URI_REGEX.exec(board);
+        if (match != null && match.length >= 2) {
+            boardId = parseInt(match[1], 10);
         }
 
         let snapshotPromise: Promise<ImageData>;
@@ -347,6 +364,10 @@ function afterCanvasLoad(): void {
         scheduleMacroTask(() => {
             deduplicateTemplates();
         });
+    }
+
+    if (templateSettings.animationUrl.get().length > 0) {
+        runAnimation(templateSettings.animationUrl.get());
     }
 }
 
